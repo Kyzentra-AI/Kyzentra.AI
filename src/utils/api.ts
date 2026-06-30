@@ -32,11 +32,9 @@ export const fileToBase64 = (file: File): Promise<FileData> => {
  * @param data   - Form payload object
  */
 export const submitForm = async (action: string, data: any, _turnstileToken?: string) => {
-  const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
-
-  if (!appsScriptUrl) {
-    throw new Error('Form backend is not configured. Please contact support.');
-  }
+  // Use env variable if available, otherwise fall back to hardcoded URL
+  const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL
+    || 'https://script.google.com/macros/s/AKfycbx6sbUiAGQYdium5j3u4VZ5X0oqGdPGZ48KjovZmUyaCn4AsMnVLaRl3B2cexizLraD/exec';
 
   // Google Apps Script accepts plain text POST to avoid CORS preflight
   const response = await fetch(appsScriptUrl, {
