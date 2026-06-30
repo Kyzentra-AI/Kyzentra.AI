@@ -54,15 +54,13 @@ function doPost(e) {
       return jsonResponse({ success: false, error: 'Invalid payload: missing action or data.' });
     }
 
-    // --- 2. Verify Turnstile token ---
+    // --- 2. Verify Turnstile token (only if a secret is configured) ---
     var secret = PropertiesService.getScriptProperties().getProperty('TURNSTILE_SECRET');
     if (!secret) {
-      // If no secret is configured, use Cloudflare's always-pass test secret
-      // This matches the always-pass test site key used on the frontend
-      secret = '1x0000000000000000000000000000000AA';
-      Logger.log('Info: TURNSTILE_SECRET not set. Using always-pass test secret.');
-    }
-    if (!turnstileToken) {
+      // No secret configured — skip Turnstile verification entirely.
+      // The frontend Turnstile widget still provides cosmetic anti-spam protection.
+      Logger.log('Info: TURNSTILE_SECRET not set. Skipping server-side Turnstile verification.');
+    } else if (!turnstileToken) {
       return jsonResponse({ success: false, error: 'Spam verification token missing. Please complete the verification.' });
     } else {
       var verifyResult = verifyTurnstile(secret, turnstileToken);

@@ -153,10 +153,7 @@ export default function Careers() {
     if (!formData.graduationYear.trim()) newErrors.graduationYear = 'Graduation year is required';
     if (!formData.skills.trim()) newErrors.skills = 'Skills listing is required';
     if (!formData.resumeFile) newErrors.file = 'Please upload your resume';
-    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-    if (siteKey && siteKey !== 'disabled' && !turnstileToken) {
-      newErrors.turnstile = 'Please verify that you are not a robot (Turnstile)';
-    }
+    // Turnstile is cosmetic — don't block submission if the widget fails
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
