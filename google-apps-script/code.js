@@ -1,31 +1,64 @@
 /**
  * Google Apps Script Web App for Kyzentra.AI Forms
- * 
- * Instructions:
- * 1. Create a Google Sheet.
- * 2. Click Extensions -> Apps Script.
+ *
+ * Setup Instructions:
+ * 1. Create or open a Google Sheet.
+ * 2. Click Extensions → Apps Script.
  * 3. Replace all default code with this script.
- * 4. Save and click "Deploy" -> "New deployment".
- * 5. Select "Web app" as the type.
- * 6. Set "Execute as" to "Me".
- * 7. Set "Who has access" to "Anyone".
- * 8. Deploy and authorize the script permissions.
- * 9. Copy the generated Web App URL and add it to your Cloudflare Pages environment variables as `APPS_SCRIPT_URL`.
+ * 4. Go to Project Settings (gear icon) → Script Properties.
+ * 5. Add a property: Name = TURNSTILE_SECRET, Value = your Cloudflare Turnstile secret key.
+ * 6. Save, then click Deploy → New deployment.
+ * 7. Select type: Web app. Execute as: Me. Who has access: Anyone.
+ * 8. Authorize and copy the Web App URL.
+ * 9. Add that URL as VITE_APPS_SCRIPT_URL in your Cloudflare Pages environment variables.
  */
 
+/**
+ * Handle CORS preflight OPTIONS requests.
+ */
+function doOptions(e) {
+  return ContentService.createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT);
+}
+
+/**
+ * Main POST handler — verifies Turnstile then writes to Sheets.
+ */
 function doPost(e) {
   try {
+    // Always return JSON, never HTML
     var requestData = JSON.parse(e.postData.contents);
     var action = requestData.action;
     var data = requestData.data;
-    
+    var turnstileToken = requestData.token || '';
+
+    // --- 1. Validate required fields ---
+    if (!action || !data) {
+      return jsonResponse({ success: false, error: 'Invalid payload: missing action or data.' });
+    }
+
+    // --- 2. Verify Turnstile token ---
+    var secret = PropertiesService.getScriptProperties().getProperty('TURNSTILE_SECRET');
+    if (!secret) {
+      // If no secret is configured, skip verification (dev mode fallback)
+      Logger.log('Warning: TURNSTILE_SECRET not set in Script Properties. Skipping verification.');
+    } else if (!turnstileToken) {
+      return jsonResponse({ success: false, error: 'Spam verification token missing. Please complete the verification.' });
+    } else {
+      var verified = verifyTurnstile(secret, turnstileToken);
+      if (!verified) {
+        return jsonResponse({ success: false, error: 'Turnstile verification failed. Please refresh and try again.' });
+      }
+    }
+
+    // --- 3. Write to the appropriate sheet ---
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet;
-    
+
     if (action === 'waitlist') {
-      sheet = getOrCreateSheet(ss, "Kyzentra - UniOS.ai Waitlist", [
-        "Timestamp", "Full Name", "School Name", "Designation", "Email", 
-        "Phone", "Student Count", "City", "State", "Country", "Message", "Source"
+      sheet = getOrCreateSheet(ss, 'Kyzentra - UniOS.ai Waitlist', [
+        'Timestamp', 'Full Name', 'School Name', 'Designation', 'Email',
+        'Phone', 'Student Count', 'City', 'State', 'Country', 'Message', 'Source'
       ]);
       sheet.appendRow([
         new Date(),
@@ -38,85 +71,94 @@ function doPost(e) {
         data.city,
         data.state,
         data.country,
-        data.message || "",
-        "Website"
+        data.message || '',
+        'Website'
       ]);
+
     } else if (action === 'careers') {
-      var resumeLink = "";
+      var resumeLink = '';
       if (data.resumeFile && data.resumeFile.base64) {
         resumeLink = uploadFile(data.resumeFile.base64, data.resumeFile.name, data.resumeFile.mimeType);
       }
-      
-      sheet = getOrCreateSheet(ss, "Kyzentra - Career Applications", [
-        "Timestamp", "Name", "Email", "Phone", "College", "Degree", "Branch", 
-        "Graduation Year", "Position", "Employment Type", "Skills", "GitHub", 
-        "LinkedIn", "Portfolio", "Resume Link", "Cover Letter", "Status"
+      sheet = getOrCreateSheet(ss, 'Kyzentra - Career Applications', [
+        'Timestamp', 'Name', 'Email', 'Phone', 'College', 'Degree', 'Branch',
+        'Graduation Year', 'Position', 'Employment Type', 'Skills', 'GitHub',
+        'LinkedIn', 'Portfolio', 'Resume Link', 'Cover Letter', 'Status'
       ]);
       sheet.appendRow([
         new Date(),
-        data.name,
-        data.email,
-        data.phone,
-        data.college,
-        data.degree,
-        data.branch,
-        data.graduationYear,
-        data.position,
-        data.employmentType,
-        data.skills,
-        data.github || "",
-        data.linkedin || "",
-        data.portfolio || "",
-        resumeLink,
-        data.coverLetter || "",
-        "New"
+        data.name, data.email, data.phone, data.college, data.degree,
+        data.branch, data.graduationYear, data.position, data.employmentType,
+        data.skills, data.github || '', data.linkedin || '',
+        data.portfolio || '', resumeLink, data.coverLetter || '', 'New'
       ]);
+
     } else if (action === 'contact') {
-      sheet = getOrCreateSheet(ss, "Kyzentra - Contact Messages", [
-        "Timestamp", "Name", "Email", "Company", "Subject", "Message", "Status"
+      sheet = getOrCreateSheet(ss, 'Kyzentra - Contact Messages', [
+        'Timestamp', 'Name', 'Email', 'Company', 'Subject', 'Message', 'Status'
       ]);
       sheet.appendRow([
         new Date(),
-        data.name,
-        data.email,
-        data.company,
-        data.subject,
-        data.message,
-        "New"
+        data.name, data.email, data.company, data.subject, data.message, 'New'
       ]);
+
     } else if (action === 'demo') {
-      sheet = getOrCreateSheet(ss, "Kyzentra - Demo Requests", [
-        "Timestamp", "Name", "School", "Designation", "Email", "Phone", 
-        "Student Count", "Preferred Date", "Preferred Time", "Notes", "Status"
+      sheet = getOrCreateSheet(ss, 'Kyzentra - Demo Requests', [
+        'Timestamp', 'Name', 'School', 'Designation', 'Email', 'Phone',
+        'Student Count', 'Preferred Date', 'Preferred Time', 'Notes', 'Status'
       ]);
       sheet.appendRow([
         new Date(),
-        data.name,
-        data.school,
-        data.designation,
-        data.email,
-        data.phone,
-        data.studentCount,
-        data.preferredDate,
-        data.preferredTime,
-        data.notes || "",
-        "Pending"
+        data.name, data.school, data.designation, data.email, data.phone,
+        data.studentCount, data.preferredDate, data.preferredTime,
+        data.notes || '', 'Pending'
       ]);
+
     } else {
-      throw new Error("Invalid action: " + action);
+      return jsonResponse({ success: false, error: 'Unknown action: ' + action });
     }
-    
-    return ContentService.createTextOutput(JSON.stringify({ success: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+
+    return jsonResponse({ success: true });
+
+  } catch (err) {
+    Logger.log('Error in doPost: ' + err.toString());
+    return jsonResponse({ success: false, error: 'Server error: ' + err.message });
   }
 }
 
 /**
- * Finds a sheet by name or creates it if it doesn't exist, appending the headers.
+ * Verifies a Cloudflare Turnstile token using the siteverify API.
+ */
+function verifyTurnstile(secret, token) {
+  try {
+    var response = UrlFetchApp.fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'post',
+      payload: {
+        secret: secret,
+        response: token
+      },
+      muteHttpExceptions: true
+    });
+    var result = JSON.parse(response.getContentText());
+    Logger.log('Turnstile verify result: ' + JSON.stringify(result));
+    return result.success === true;
+  } catch (err) {
+    Logger.log('Turnstile verification error: ' + err.toString());
+    return false;
+  }
+}
+
+/**
+ * Always returns a JSON ContentService response.
+ */
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Finds or creates a sheet with the given name and headers.
  */
 function getOrCreateSheet(ss, name, headers) {
   var sheet = ss.getSheetByName(name);
@@ -124,26 +166,21 @@ function getOrCreateSheet(ss, name, headers) {
     sheet = ss.insertSheet(name);
     sheet.appendRow(headers);
     sheet.getRange(1, 1, 1, headers.length)
-      .setFontWeight("bold")
-      .setBackground("#f3f3f3");
+      .setFontWeight('bold')
+      .setBackground('#f3f3f3');
     sheet.setFrozenRows(1);
   }
   return sheet;
 }
 
 /**
- * Decodes base64 file data and saves it to a Google Drive folder named "Kyzentra Resumes".
+ * Decodes base64 file data and saves it to Google Drive folder "Kyzentra Resumes".
  * Returns the public view URL.
  */
 function uploadFile(base64Data, fileName, mimeType) {
-  var folderName = "Kyzentra Resumes";
+  var folderName = 'Kyzentra Resumes';
   var folders = DriveApp.getFoldersByName(folderName);
-  var folder;
-  if (folders.hasNext()) {
-    folder = folders.next();
-  } else {
-    folder = DriveApp.createFolder(folderName);
-  }
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
   var decoded = Utilities.base64Decode(base64Data);
   var blob = Utilities.newBlob(decoded, mimeType, fileName);
   var file = folder.createFile(blob);

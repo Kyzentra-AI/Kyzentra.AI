@@ -31,15 +31,15 @@ export const fileToBase64 = (file: File): Promise<FileData> => {
  * @param action - 'waitlist' | 'careers' | 'contact' | 'demo'
  * @param data   - Form payload object
  */
-export const submitForm = async (action: string, data: any, _turnstileToken?: string) => {
+export const submitForm = async (action: string, data: any, turnstileToken?: string) => {
   // Use env variable if available, otherwise fall back to hardcoded URL
   const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL
     || 'https://script.google.com/macros/s/AKfycbx6sbUiAGQYdium5j3u4VZ5X0oqGdPGZ48KjovZmUyaCn4AsMnVLaRl3B2cexizLraD/exec';
 
-  // Google Apps Script accepts plain text POST to avoid CORS preflight
+  // Send action, data, and Turnstile token — Apps Script verifies the token server-side
   const response = await fetch(appsScriptUrl, {
     method: 'POST',
-    body: JSON.stringify({ action, data }),
+    body: JSON.stringify({ action, data, token: turnstileToken || '' }),
   });
 
   if (!response.ok) {
