@@ -57,9 +57,12 @@ function doPost(e) {
     // --- 2. Verify Turnstile token ---
     var secret = PropertiesService.getScriptProperties().getProperty('TURNSTILE_SECRET');
     if (!secret) {
-      // If no secret is configured, skip verification (dev mode fallback)
-      Logger.log('Warning: TURNSTILE_SECRET not set in Script Properties. Skipping verification.');
-    } else if (!turnstileToken) {
+      // If no secret is configured, use Cloudflare's always-pass test secret
+      // This matches the always-pass test site key used on the frontend
+      secret = '1x0000000000000000000000000000000AA';
+      Logger.log('Info: TURNSTILE_SECRET not set. Using always-pass test secret.');
+    }
+    if (!turnstileToken) {
       return jsonResponse({ success: false, error: 'Spam verification token missing. Please complete the verification.' });
     } else {
       var verifyResult = verifyTurnstile(secret, turnstileToken);
