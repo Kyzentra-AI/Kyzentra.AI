@@ -57,7 +57,8 @@ export default function Contact() {
     }
     if (!formData.company.trim()) newErrors.company = 'Company is required';
     if (!formData.message.trim()) newErrors.message = 'Message content is required';
-    if (!turnstileToken) {
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+    if (siteKey && siteKey !== 'disabled' && !turnstileToken) {
       newErrors.turnstile = 'Please verify that you are not a robot (Turnstile)';
     }
     

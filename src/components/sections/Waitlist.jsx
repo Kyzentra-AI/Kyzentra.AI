@@ -123,7 +123,8 @@ export default function Waitlist() {
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.state.trim()) newErrors.state = 'State is required';
     if (!formData.country.trim()) newErrors.country = 'Country is required';
-    if (!turnstileToken) {
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+    if (siteKey && siteKey !== 'disabled' && !turnstileToken) {
       newErrors.turnstile = 'Please verify that you are not a robot (Turnstile)';
     }
     setErrors(newErrors);

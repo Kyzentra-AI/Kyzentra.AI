@@ -50,12 +50,8 @@ export default function Turnstile({ onSuccess, onError, onExpire }: TurnstilePro
     };
   }, [siteKey, onSuccess, onError, onExpire]);
 
-  if (!siteKey) {
-    return (
-      <div style={{ color: '#ef4444', fontSize: '0.8rem', padding: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.05)' }}>
-        Spam protection error: Site key is not configured.
-      </div>
-    );
+  if (!siteKey || siteKey === 'disabled') {
+    return null;
   }
 
   return (
