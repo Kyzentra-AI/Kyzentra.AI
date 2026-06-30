@@ -45,9 +45,13 @@ function doPost(e) {
     } else if (!turnstileToken) {
       return jsonResponse({ success: false, error: 'Spam verification token missing. Please complete the verification.' });
     } else {
-      var verified = verifyTurnstile(secret, turnstileToken);
-      if (!verified) {
-        return jsonResponse({ success: false, error: 'Turnstile verification failed. Please refresh and try again.' });
+      var verifyResult = verifyTurnstile(secret, turnstileToken);
+      if (!verifyResult.success) {
+        var errStr = 'Turnstile verification failed';
+        if (verifyResult.errors && verifyResult.errors.length > 0) {
+          errStr += ' (Cloudflare Error: ' + verifyResult.errors.join(', ') + ')';
+        }
+        return jsonResponse({ success: false, error: errStr + '. Please refresh and try again.' });
       }
     }
 
@@ -126,25 +130,28 @@ function doPost(e) {
   }
 }
 
-/**
- * Verifies a Cloudflare Turnstile token using the siteverify API.
- */
 function verifyTurnstile(secret, token) {
   try {
     var response = UrlFetchApp.fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'post',
       payload: {
-        secret: secret,
-        response: token
+        secret: secret.trim(),
+        response: token.trim()
       },
       muteHttpExceptions: true
     });
     var result = JSON.parse(response.getContentText());
     Logger.log('Turnstile verify result: ' + JSON.stringify(result));
-    return result.success === true;
+    return {
+      success: result.success === true,
+      errors: result['error-codes'] || []
+    };
   } catch (err) {
     Logger.log('Turnstile verification error: ' + err.toString());
-    return false;
+    return {
+      success: false,
+      errors: ['internal-script-error: ' + err.toString()]
+    };
   }
 }
 
