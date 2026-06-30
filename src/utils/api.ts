@@ -6,7 +6,7 @@
  */
 export const submitForm = async (action: string, data: any, _turnstileToken?: string) => {
   const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL
-    || 'https://script.google.com/macros/s/AKfycbx6sbUiAGQYdium5j3u4VZ5X0oqGdPGZ48KjovZmUyaCn4AsMnVLaRl3B2cexizLraD/exec';
+    || 'https://script.google.com/macros/s/AKfycbymnFnkMXj_VlErafiWLPt1uhghfXGG3gSFIA-hpTsyyQBLOp-6BuvX0KSb8aFFqJ8M/exec';
 
   // Google Apps Script redirects POST requests through script.googleusercontent.com.
   // This redirect chain can break CORS in browsers, causing "Failed to fetch".
