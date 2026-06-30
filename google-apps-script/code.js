@@ -7,11 +7,28 @@
  * 3. Replace all default code with this script.
  * 4. Go to Project Settings (gear icon) → Script Properties.
  * 5. Add a property: Name = TURNSTILE_SECRET, Value = your Cloudflare Turnstile secret key.
- * 6. Save, then click Deploy → New deployment.
- * 7. Select type: Web app. Execute as: Me. Who has access: Anyone.
- * 8. Authorize and copy the Web App URL.
- * 9. Add that URL as VITE_APPS_SCRIPT_URL in your Cloudflare Pages environment variables.
+ * 6. Select "testPermissions" from the run dropdown and click "Run" to authorize the script.
+ * 7. Save, then click Deploy → New deployment.
+ * 8. Select type: Web app. Execute as: Me. Who has access: Anyone.
+ * 9. Authorize and copy the Web App URL.
+ * 10. Add that URL as VITE_APPS_SCRIPT_URL in your Cloudflare Pages environment variables.
  */
+
+/**
+ * RUN THIS FUNCTION ONCE IN THE EDITOR TO AUTHORIZE THE SCRIPT
+ */
+function testPermissions() {
+  Logger.log('Active User: ' + Session.getActiveUser().getEmail());
+  try {
+    UrlFetchApp.fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'post',
+      payload: { secret: 'test', response: 'test' }
+    });
+    Logger.log('External request permission verified successfully.');
+  } catch (e) {
+    Logger.log('External request check complete: ' + e.toString());
+  }
+}
 
 /**
  * Handle CORS preflight OPTIONS requests.
