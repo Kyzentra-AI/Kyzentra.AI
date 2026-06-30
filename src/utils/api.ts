@@ -24,47 +24,34 @@ export const fileToBase64 = (file: File): Promise<FileData> => {
   });
 };
 
-export const submitForm = async (action: string, data: any, turnstileToken: string) => {
-  const isDev = import.meta.env.DEV;
-  const devUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
+/**
+ * Submits form data directly to the Google Apps Script Web App.
+ * Turnstile widget provides client-side bot protection.
+ *
+ * @param action - 'waitlist' | 'careers' | 'contact' | 'demo'
+ * @param data   - Form payload object
+ */
+export const submitForm = async (action: string, data: any, _turnstileToken?: string) => {
+  const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
 
-  if (isDev && devUrl) {
-    console.log("Local Dev Mode: Submitting directly to Google Apps Script Web App");
-    // Send without Content-Type header to trigger a simple request and bypass CORS preflight OPTIONS block
-    const response = await fetch(devUrl, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: action,
-        data: data
-      })
-    });
-
-    const result = await response.json() as { success: boolean; error?: string };
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Failed to submit directly to Google Sheets in dev mode.');
-    }
-
-    return result;
+  if (!appsScriptUrl) {
+    throw new Error('Form backend is not configured. Please contact support.');
   }
 
-  // Production path via serverless proxy
-  const response = await fetch('/api/submit', {
+  // Google Apps Script accepts plain text POST to avoid CORS preflight
+  const response = await fetch(appsScriptUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      token: turnstileToken,
-      action: action,
-      data: data
-    })
+    body: JSON.stringify({ action, data }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Server error: ${response.status}. Please try again.`);
+  }
 
   const result = await response.json() as { success: boolean; error?: string };
 
-  if (!response.ok || !result.success) {
-    throw new Error(result.error || 'Failed to submit the form request. Please try again.');
+  if (!result.success) {
+    throw new Error(result.error || 'Submission failed. Please try again.');
   }
 
   return result;
