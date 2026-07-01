@@ -5,23 +5,56 @@
  * @param data   - Form payload object
  */
 export const submitForm = async (action: string, data: any, _turnstileToken?: string) => {
-  const appsScriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL
-    || 'https://script.google.com/macros/s/AKfycbymnFnkMXj_VlErafiWLPt1uhghfXGG3gSFIA-hpTsyyQBLOp-6BuvX0KSb8aFFqJ8M/exec';
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  // Use relative endpoint if in production, otherwise use the direct Apps Script URL for easy local testing
+  const useRelative = import.meta.env.PROD || !isLocalhost;
+  
+  const url = useRelative 
+    ? '/api/submit'
+    : (import.meta.env.VITE_APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbymnFnkMXj_VlErafiWLPt1uhghfXGG3gSFIA-hpTsyyQBLOp-6BuvX0KSb8aFFqJ8M/exec');
 
-  // Google Apps Script redirects POST requests through script.googleusercontent.com.
-  // This redirect chain can break CORS in browsers, causing "Failed to fetch".
-  // Using mode: 'no-cors' ensures the request always goes through.
-  // The trade-off: we can't read the response body, so we assume success if no network error.
-  const response = await fetch(appsScriptUrl, {
+  const response = await fetch(url, {
     method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    redirect: 'follow',
     body: JSON.stringify({ action, data, token: _turnstileToken || '' }),
   });
 
-  // With no-cors, response is opaque (status=0, body empty), but the request DID go through.
-  // If fetch() itself throws (network error), the catch in the form handler will display it.
-  return { success: true };
+  if (!response.ok) {
+    let errorMsg = 'Submission failed. Please try again.';
+    try {
+      const errJson = await response.json();
+      errorMsg = errJson.error || errorMsg;
+    } catch {
+      try {
+        const text = await response.text();
+        if (text) {
+          errorMsg = text.substring(0, 150);
+        }
+      } catch {}
+    }
+    throw new Error(errorMsg);
+  }
+
+  // Google Apps Script may redirect (302) and return the result as text.
+  // Try to parse JSON; if it fails, assume success since no error was thrown.
+  let result: { success: boolean; error?: string };
+  try {
+    result = await response.json();
+  } catch {
+    // If the response isn't valid JSON (e.g. opaque redirect), treat as success.
+    // The data was sent — check your Google Sheet to confirm.
+    return { success: true };
+  }
+
+  if (!result.success) {
+    throw new Error(result.error || 'Submission failed. Please try again.');
+  }
+
+  return result;
 };
 
 /**

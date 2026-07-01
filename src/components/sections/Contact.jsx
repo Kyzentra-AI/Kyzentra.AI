@@ -138,34 +138,34 @@ export default function Contact() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div>
                   <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>General Contact</span>
-                  <a href="mailto:official.kyzentra.ai@gmail.com" style={{ fontSize: '0.96rem', color: 'white', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='var(--accent-blue)'} onMouseLeave={(e)=>e.target.style.color='white'}>
-                    official.kyzentra.ai@gmail.com
+                  <a href="mailto:official@kyzentra.qzz.io" style={{ fontSize: '0.96rem', color: 'white', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='var(--accent-blue)'} onMouseLeave={(e)=>e.target.style.color='white'}>
+                    official@kyzentra.qzz.io
                   </a>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px' }} className="contact-emails-grid">
                   <div>
                     <span style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>Business enquiries</span>
-                    <a href="mailto:official.kyzentra.ai@gmail.com" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
-                      official.kyzentra.ai@gmail.com
+                    <a href="mailto:official@kyzentra.qzz.io" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
+                      official@kyzentra.qzz.io
                     </a>
                   </div>
                   <div>
                     <span style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>Partnership enquiries</span>
-                    <a href="mailto:official.kyzentra.ai@gmail.com" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
-                      official.kyzentra.ai@gmail.com
+                    <a href="mailto:official@kyzentra.qzz.io" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
+                      official@kyzentra.qzz.io
                     </a>
                   </div>
                   <div>
                     <span style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>Careers</span>
-                    <a href="mailto:official.kyzentra.ai@gmail.com" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
-                      official.kyzentra.ai@gmail.com
+                    <a href="mailto:career@kyzentra.qzz.io" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
+                      career@kyzentra.qzz.io
                     </a>
                   </div>
                   <div>
                     <span style={{ display: 'block', fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>General support</span>
-                    <a href="mailto:official.kyzentra.ai@gmail.com" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
-                      official.kyzentra.ai@gmail.com
+                    <a href="mailto:official@kyzentra.qzz.io" style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: 500 }}>
+                      official@kyzentra.qzz.io
                     </a>
                   </div>
                 </div>
