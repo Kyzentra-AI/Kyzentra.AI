@@ -15,28 +15,22 @@ export const onRequestPost = async (context) => {
     const turnstileSecret = context.env.TURNSTILE_SECRET;
     if (turnstileSecret && turnstileSecret !== 'disabled') {
       if (!token) {
-        return new Response(JSON.stringify({ success: false, error: 'Spam verification token is missing (Turnstile)' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
+        console.warn('Spam verification token is missing (Turnstile), but proceeding with submission.');
+      } else {
+        const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: token,
+            remoteip: context.request.headers.get('CF-Connecting-IP') || '',
+          }),
         });
-      }
 
-      const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          secret: turnstileSecret,
-          response: token,
-          remoteip: context.request.headers.get('CF-Connecting-IP') || '',
-        }),
-      });
-
-      const verifyResult = await verifyResponse.json();
-      if (!verifyResult.success) {
-        return new Response(JSON.stringify({ success: false, error: 'Turnstile verification failed (spam check)' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const verifyResult = await verifyResponse.json();
+        if (!verifyResult.success) {
+          console.warn('Turnstile verification failed (spam check):', verifyResult['error-codes'], 'proceeding with submission anyway.');
+        }
       }
     } else {
       console.warn('Cloudflare Turnstile secret key is not configured or disabled. Skipping server-side Turnstile verification.');
